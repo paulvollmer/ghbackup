@@ -17,6 +17,7 @@ type Config struct {
 	Err     *log.Logger
 	Log     *log.Logger
 	Secret  string
+	Mode    string
 	API     string
 	Workers int
 	Doer

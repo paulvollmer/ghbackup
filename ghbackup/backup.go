@@ -14,7 +14,7 @@ import (
 // Clone new repo or pull in existing repo.
 // Returns the count of objects fetched and a boolean indicating if the repository is new.
 func (c Config) backup(r repo) (int, bool, error) {
-	repoDir := getRepoDir(c.Dir, r.Path, c.Account)
+	repoDir := getRepoDir(c.Dir, r.Path, c.Account, c.Mode)
 
 	repoExists, err := exists(repoDir)
 	if err != nil {
@@ -28,7 +28,14 @@ func (c Config) backup(r repo) (int, bool, error) {
 		cmd.Dir = repoDir
 	} else {
 		c.Log.Printf("Cloning %s", r.Path)
-		cmd = exec.Command("git", "clone", "--mirror", "--no-checkout", "--progress", getCloneURL(r, c.Secret), repoDir)
+
+		if c.Mode == "mirror" {
+			cmd = exec.Command("git", "clone", "--mirror", "--no-checkout", "--progress", getCloneURL(r, c.Secret), repoDir)
+		} else if c.Mode == "standard" {
+			cmd = exec.Command("git", "clone", "--progress", getCloneURL(r, c.Secret), repoDir)
+		} else {
+			return 0, false, fmt.Errorf("git clone mode not supported. use 'mirror' or 'standard'")
+		}
 	}
 
 	out, err := cmd.CombinedOutput()
@@ -39,8 +46,13 @@ func (c Config) backup(r repo) (int, bool, error) {
 	return gitObjectCount(string(out)), !repoExists, nil
 }
 
-func getRepoDir(backupDir, repoPath, account string) string {
-	repoGit := repoPath + ".git"
+func getRepoDir(backupDir, repoPath, account, mode string) string {
+	repoGit := repoPath
+
+	if mode == "mirror" {
+		repoGit += ".git"
+	}
+
 	// For single account, skip sub-directories
 	if account != "" {
 		return filepath.Join(backupDir, path.Base(repoGit))
