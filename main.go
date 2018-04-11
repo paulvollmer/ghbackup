@@ -24,7 +24,7 @@ Usage: %s [flags] directory
 
   directory  path to save the repositories to
 
-At least one of -account or -secret must be specified.
+At least one of -account or -secret / GITHUB_SECRET env-var must be specified.
 
 Flags:
 `
@@ -60,8 +60,13 @@ func main() {
 		os.Exit(0)
 	}
 
+	envSecret := os.Getenv("GITHUB_SECRET")
+	if envSecret != "" {
+		*secret = envSecret
+	}
+
 	args := flag.Args()
-	if len(args) != 1 || (*account == "" && *secret == "") {
+	if len(args) != 1 || *secret == "" {
 		flag.Usage()
 		os.Exit(1)
 	}
